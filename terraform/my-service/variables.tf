@@ -44,7 +44,7 @@ variable "application_name" {
 }
 
 variable "team" {
-  default = "scorable"
+  default = "your-team-name"
 }
 
 variable "log_retention_period" {

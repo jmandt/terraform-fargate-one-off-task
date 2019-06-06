@@ -22,7 +22,7 @@ data "terraform_remote_state" "base_vpc" {
 
   config {
     bucket = "${var.generic_terraform_backend_bucket}"
-    key = "${var.path_to_state_file}.tfstate"
+    key    = "${var.path_to_state_file}.tfstate"
     region = "${var.aws_region}"
   }
 }
@@ -50,18 +50,18 @@ resource "aws_ecs_cluster" "fargate_cluster" {
 
 
 data "template_file" "service_app_tpl" {
-  template = "${file("${path.module}/../templates/my_service.json.tpl")}"
+  template            = "${file("${path.module}/../templates/my_service.json.tpl")}"
 
   vars {
-    container_name = "${var.application_name}-container"
+    container_name    = "${var.application_name}-container"
 
-    container_image      = "${data.aws_caller_identity.current.account_id}.dkr.ecr.eu-west-1.amazonaws.com/${var.application_name}:latest"
-    container_cpu    = "${var.container_cpu}"
-    container_memory = "${var.container_memory}"
-    aws_region     = "${var.aws_region}"
-    container_port       = "5000"
-    environment    = "${var.environment}"
-    application_name = "${var.application_name}"
+    container_image   = "${data.aws_caller_identity.current.account_id}.dkr.ecr.eu-west-1.amazonaws.com/${var.application_name}:latest"
+    container_cpu     = "${var.container_cpu}"
+    container_memory  = "${var.container_memory}"
+    aws_region        = "${var.aws_region}"
+    container_port    = "5000"
+    environment       = "${var.environment}"
+    application_name  = "${var.application_name}"
   }
 }
 
@@ -79,41 +79,40 @@ module "terraform-module-aws-fargate-one-off" {
   account_id                        = "${data.aws_caller_identity.current.account_id}"
 
 
-
   # network
   task_subnet_ids                   = "${data.terraform_remote_state.base_vpc.private_subnet_ids}"
   vpc_id                            = "${data.terraform_remote_state.base_vpc.vpc_id}"
 
   # service
-  task_revision               = "${var.task_revision}"
-  rendered_fargate_container_def = "${data.template_file.service_app_tpl.rendered}"
-  task_memory                 = "${var.container_memory}"
-  task_cpu                    = "${var.container_cpu}"
-  log_retention_period        = "${var.log_retention_period}"
+  task_revision                     = "${var.task_revision}"
+  rendered_fargate_container_def    = "${data.template_file.service_app_tpl.rendered}"
+  task_memory                       = "${var.container_memory}"
+  task_cpu                          = "${var.container_cpu}"
+  log_retention_period              = "${var.log_retention_period}"
 
 }
 
 resource "aws_cloudwatch_event_rule" "quant_rd_model_prediction_trigger" {
-  name = "update-rd-model-prediction-data"
-  description = "Starts a new task on AWS ECS FARGATE which updates the rd model prediction data"
+  name                = "update-rd-model-prediction-data"
+  description         = "Starts a new task on AWS ECS FARGATE which updates the rd model prediction data"
   schedule_expression = "rate(3 minutes)"
 }
 
 resource "aws_cloudwatch_event_target" "ecs_scheduled_task" {
-  target_id = "${var.application_name}-task-definition"
-  arn  = "${aws_ecs_cluster.fargate_cluster.arn}"
-  rule = "${aws_cloudwatch_event_rule.quant_rd_model_prediction_trigger.name}"
-  role_arn  = "${aws_iam_role.ecs_events.arn}"
+  target_id               = "${var.application_name}-task-definition"
+  arn                     = "${aws_ecs_cluster.fargate_cluster.arn}"
+  rule                    = "${aws_cloudwatch_event_rule.quant_rd_model_prediction_trigger.name}"
+  role_arn                = "${aws_iam_role.ecs_events.arn}"
 
   ecs_target = {
-    launch_type = "FARGATE"
-    task_count = 1
-    platform_version    = "LATEST"
-    task_definition_arn = "arn:aws:ecs:eu-west-1:${data.aws_caller_identity.current.account_id}:task-definition/${var.application_name}:${var.task_revision}"
+    launch_type           = "FARGATE"
+    task_count            = 1
+    platform_version      = "LATEST"
+    task_definition_arn   = "arn:aws:ecs:eu-west-1:${data.aws_caller_identity.current.account_id}:task-definition/${var.application_name}:${var.task_revision}"
     network_configuration = {
-      subnets = ["${split(",", data.terraform_remote_state.base_vpc.private_subnet_ids)}"]
-      assign_public_ip = true
-      security_groups = ["${module.terraform-module-aws-fargate-one-off.aws_security_group_task_sg_id}"]
+      subnets             = ["${split(",", data.terraform_remote_state.base_vpc.private_subnet_ids)}"]
+      assign_public_ip    = true
+      security_groups     = ["${module.terraform-module-aws-fargate-one-off.aws_security_group_task_sg_id}"]
     }
   }
 }
