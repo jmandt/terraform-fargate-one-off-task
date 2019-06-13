@@ -92,16 +92,16 @@ module "terraform-module-aws-fargate-one-off" {
 
 }
 
-resource "aws_cloudwatch_event_rule" "quant_rd_model_prediction_trigger" {
-  name                = "update-rd-model-prediction-data"
-  description         = "Starts a new task on AWS ECS FARGATE which updates the rd model prediction data"
+resource "aws_cloudwatch_event_rule" "run-my-service-event-rule" {
+  name                = "run-my-service"
+  description         = "Starts a new task on AWS ECS FARGATE which runs my service"
   schedule_expression = "rate(3 minutes)"
 }
 
 resource "aws_cloudwatch_event_target" "ecs_scheduled_task" {
   target_id               = "${var.application_name}-task-definition"
   arn                     = "${aws_ecs_cluster.fargate_cluster.arn}"
-  rule                    = "${aws_cloudwatch_event_rule.quant_rd_model_prediction_trigger.name}"
+  rule                    = "${aws_cloudwatch_event_rule.run-my-service-event-rule.name}"
   role_arn                = "${aws_iam_role.ecs_events.arn}"
 
   ecs_target = {
